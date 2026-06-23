@@ -30,15 +30,32 @@ public static class HostingExtensions
     private static readonly Type AllowAnonymousAttributeType = typeof(AllowAnonymousAttribute);
 
     /// <summary>
+    /// Internal global registry for source-generated invoker delegates.
+    /// Populated by module initializers emitted by Orleans.Http.CodeGenerator.
+    /// </summary>
+    internal static IGrainInvokerRegistry? GlobalInvokerRegistry { get; set; }
+
+    /// <summary>
+    /// Called by source-generated module initializers to get the global registry.
+    /// Returns null if the registry hasn't been set up yet (e.g. during static initialization).
+    /// </summary>
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    public static IGrainInvokerRegistry? GetGlobalInvokerRegistry() => GlobalInvokerRegistry;
+
+    /// <summary>
     /// Registers the GrainRouter and supporting services in the DI container.
     /// </summary>
     public static IServiceCollection AddGrainRouter(this IServiceCollection services)
     {
+        // Wire the static instance so source-generated module initializers can register
+        GlobalInvokerRegistry = GrainInvokerRegistry.StaticInstance;
+
         return services
             .AddSingleton<MediaTypeManager>()
             .AddSingleton<GrainRouter>()
             .AddSingleton<RouteGrainProviderFactory>()
-            .AddSingleton<IRouteGrainProviderPolicyBuilder>(sp => sp.GetRequiredService<RouteGrainProviderFactory>());
+            .AddSingleton<IRouteGrainProviderPolicyBuilder>(sp => sp.GetRequiredService<RouteGrainProviderFactory>())
+            .AddSingleton<IGrainInvokerRegistry>(sp => GrainInvokerRegistry.StaticInstance);
     }
 
     /// <summary>Register the JSON media type handler with optional configuration.</summary>

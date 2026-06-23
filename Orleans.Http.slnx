@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Orleans.Http.Abstractions/Orleans.Http.Abstractions.csproj" />
+    <Project Path="src/Orleans.Http.CodeGenerator/Orleans.Http.CodeGenerator.csproj" />
     <Project Path="src/Orleans.Http.MediaTypes.Protobuf/Orleans.Http.MediaTypes.Protobuf.csproj" />
     <Project Path="src/Orleans.Http/Orleans.Http.csproj" />
   </Folder>
