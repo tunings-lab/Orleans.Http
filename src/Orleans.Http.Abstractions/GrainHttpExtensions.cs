@@ -1,4 +1,5 @@
 using System.Net;
+using Orleans;
 
 namespace Orleans;
 
@@ -17,10 +18,16 @@ public interface IGrainHttpResult
 public interface IGrainHttpResult<TResult> : IGrainHttpResult { }
 
 /// <summary>Default implementation of <see cref="IGrainHttpResult{TResult}"/>.</summary>
+[GenerateSerializer]
 internal sealed class GrainHttpResult<TResult> : IGrainHttpResult<TResult>
 {
+    [Id(0)]
     public Dictionary<string, string>? ResponseHeaders { get; set; }
+
+    [Id(1)]
     public HttpStatusCode StatusCode { get; set; } = HttpStatusCode.OK;
+
+    [Id(2)]
     public object? Body { get; set; }
 }
 
