@@ -240,6 +240,26 @@ public class HttpTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    [Fact]
+    public async Task OpenApi_EndpointAvailable_ReturnsValidSpec()
+    {
+        // Fetch the OpenAPI document — verifies the endpoint is wired up
+        var response = await _client.GetAsync("/openapi/v1.json");
+        Assert.True(response.IsSuccessStatusCode, $"OpenAPI request failed: {response.StatusCode}");
+
+        var json = await response.Content.ReadAsStringAsync();
+        Assert.NotEmpty(json);
+
+        // The OpenAPI spec should have a "paths" section
+        Assert.Contains("\"paths\"", json);
+
+        // Note: Full grain route OpenAPI metadata (descriptions, schemas, response types)
+        // requires adding WithMetadata/Produces calls in MapGrains, which is tracked
+        // as a future enhancement. The endpoint routing infrastructure is compatible
+        // with OpenAPI — routes are registered via MapMethods and will appear when
+        // metadata is added.
+    }
+
     private static string GenerateJwt(bool admin)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
