@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <PackageId>Orleans.Http</PackageId>
+    <Title>Microsoft Orleans Http Endpoints</Title>
+    <Description>Expose Orleans grains as HTTP endpoints via ASP.NET Core endpoint routing — no controllers required.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Orleans.Server" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Orleans.Http.Abstractions\Orleans.Http.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

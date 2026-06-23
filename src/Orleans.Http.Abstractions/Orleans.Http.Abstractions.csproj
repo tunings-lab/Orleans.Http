@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <PackageId>Orleans.Http.Abstractions</PackageId>
+    <Title>Microsoft Orleans Http Endpoints (Abstractions)</Title>
+    <Description>Abstractions for exposing Orleans grains as HTTP endpoints via ASP.NET Core endpoint routing.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Orleans.Core.Abstractions" />
+  </ItemGroup>
+
+</Project>
