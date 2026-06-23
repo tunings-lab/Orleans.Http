@@ -169,7 +169,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact(Skip = "HttpContext does not flow into Orleans grain scheduler — tracked in #7")]
+    [Fact]
     public async Task AuthTest_WithUserToken_ReturnsOk()
     {
         var jwt = GenerateJwt(admin: false);
@@ -192,7 +192,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
-    [Fact(Skip = "HttpContext does not flow into Orleans grain scheduler — tracked in #7")]
+    [Fact]
     public async Task AuthTest_AdminTokenOnAdminEndpoint_ReturnsOk()
     {
         var jwt = GenerateJwt(admin: true);

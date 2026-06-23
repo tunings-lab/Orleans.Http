@@ -7,6 +7,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Orleans.Http.Abstractions;
 
+// Bring SetHttpUser/ClearHttpUser into scope
+using static Orleans.GrainHttpContextExtensions;
+
 namespace Orleans.Http;
 
 internal sealed class GrainInvoker
@@ -55,9 +58,16 @@ internal sealed class GrainInvoker
 
     public async Task Invoke(IGrain grain, HttpContext context)
     {
-        var parameters = await GetParameters(context);
-        var grainCall = (Task)_methodInfo.Invoke(grain, parameters)!;
-        await grainCall;
+        // Propagate HTTP user identity to the grain via RequestContext
+        // so grains can access claims without HttpContextAccessor (which
+        // doesn't flow across the Orleans scheduler boundary).
+        SetHttpUser(context.User);
+
+        try
+        {
+            var parameters = await GetParameters(context);
+            var grainCall = (Task)_methodInfo.Invoke(grain, parameters)!;
+            await grainCall;
 
         if (_getResult is not null)
         {
@@ -106,6 +116,11 @@ internal sealed class GrainInvoker
                     }
                 }
             }
+        }
+        }
+        finally
+        {
+            ClearHttpUser();
         }
     }
 
