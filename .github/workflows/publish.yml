@@ -8,6 +8,10 @@ on:
 jobs:
   pack-and-publish:
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
     steps:
       - uses: actions/checkout@v4
 
@@ -33,14 +37,6 @@ jobs:
           dotnet nuget push nupkg/*.nupkg \
             --api-key ${{ secrets.GITHUB_TOKEN }} \
             --source https://nuget.pkg.github.com/tunings-lab/index.json \
-            --skip-duplicate
-
-      - name: Publish to NuGet.org
-        if: ${{ secrets.NUGET_API_KEY != '' }}
-        run: |
-          dotnet nuget push nupkg/*.nupkg \
-            --api-key ${{ secrets.NUGET_API_KEY }} \
-            --source https://api.nuget.org/v3/index.json \
             --skip-duplicate
 
       - name: Upload artifacts
