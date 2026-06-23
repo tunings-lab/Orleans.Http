@@ -7,6 +7,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Orleans.Http.Abstractions;
 
+// Bring SetHttpUser/ClearHttpUser into scope
+using static Orleans.GrainHttpContextExtensions;
+
 namespace Orleans.Http;
 
 internal sealed class GrainInvoker
@@ -55,9 +58,16 @@ internal sealed class GrainInvoker
 
     public async Task Invoke(IGrain grain, HttpContext context)
     {
-        var parameters = await GetParameters(context);
-        var grainCall = (Task)_methodInfo.Invoke(grain, parameters)!;
-        await grainCall;
+        // Propagate HTTP user identity to the grain via RequestContext
+        // so grains can access claims without HttpContextAccessor (which
+        // doesn't flow across the Orleans scheduler boundary).
+        SetHttpUser(context.User);
+
+        try
+        {
+            var parameters = await GetParameters(context);
+            var grainCall = (Task)_methodInfo.Invoke(grain, parameters)!;
+            await grainCall;
 
         if (_getResult is not null)
         {
@@ -106,6 +116,11 @@ internal sealed class GrainInvoker
                     }
                 }
             }
+        }
+        }
+        finally
+        {
+            ClearHttpUser();
         }
     }
 
@@ -175,6 +190,18 @@ internal sealed class GrainInvoker
         }
     }
 
+    private static bool IsSimpleType(Type type)
+    {
+        return type.IsPrimitive
+            || type == typeof(string)
+            || type == typeof(decimal)
+            || type == typeof(DateTime)
+            || type == typeof(DateTimeOffset)
+            || type == typeof(Guid)
+            || type == typeof(char)
+            || type.IsEnum;
+    }
+
     private static object? ConvertType(string? value, Type targetType)
     {
         if (string.IsNullOrEmpty(value)) return targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
@@ -229,8 +256,20 @@ internal sealed class GrainInvoker
             }
             else
             {
-                // Default: route for simple types
-                source = ParameterSource.Route;
+                // Default: Body for complex types, Route for simple types
+                var paramType = methodParameter.ParameterType;
+                var unwrapped = Nullable.GetUnderlyingType(paramType) ?? paramType;
+
+                if (IsSimpleType(unwrapped))
+                {
+                    source = ParameterSource.Route;
+                }
+                else
+                {
+                    if (hasBody) throw new InvalidOperationException("A method can only have one [FromBody] parameter.");
+                    source = ParameterSource.Body;
+                    hasBody = true;
+                }
             }
 
             _parameters[methodParameter.Name!] = new ParameterInfo(methodParameter.Name!, methodParameter.ParameterType, source);

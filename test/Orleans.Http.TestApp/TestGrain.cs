@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
 using Orleans.Concurrency;
 using Orleans.Http.Abstractions;
 
@@ -7,12 +6,7 @@ namespace Orleans.Http.Test;
 
 public class TestGrain : Grain, ITestGrain
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
-
-    public TestGrain(IHttpContextAccessor accessor)
-    {
-        _httpContextAccessor = accessor;
-    }
+    public TestGrain() { }
 
     public Task Get() => Task.CompletedTask;
 
@@ -47,10 +41,11 @@ public class TestGrain : Grain, ITestGrain
 
     public Task<AuthResponse> GetWithAuth()
     {
+        var user = this.GetHttpUser();
         return Task.FromResult(new AuthResponse
         {
-            User = _httpContextAccessor.HttpContext!.User.FindFirst(ClaimTypes.Name)!.Value,
-            Role = _httpContextAccessor.HttpContext!.User.FindFirst(ClaimTypes.Role)!.Value
+            User = user.FindFirst(ClaimTypes.Name)?.Value,
+            Role = user.FindFirst(ClaimTypes.Role)?.Value
         });
     }
 
@@ -66,10 +61,11 @@ public class TestGrain : Grain, ITestGrain
 
     public Task<AuthResponse> GetWithAuthAdmin()
     {
+        var user = this.GetHttpUser();
         return Task.FromResult(new AuthResponse
         {
-            User = _httpContextAccessor.HttpContext!.User.FindFirst(ClaimTypes.Name)!.Value,
-            Role = _httpContextAccessor.HttpContext!.User.FindFirst(ClaimTypes.Role)!.Value
+            User = user.FindFirst(ClaimTypes.Name)?.Value,
+            Role = user.FindFirst(ClaimTypes.Role)?.Value
         });
     }
 
