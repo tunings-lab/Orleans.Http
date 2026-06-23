@@ -74,6 +74,7 @@ internal sealed class GrainInvoker
             BuildResultDelegate();
         }
 
+        _isIResultType = IsIResultReturn(methodInfo);
         BuildParameterMap();
     }
 
@@ -91,6 +92,19 @@ internal sealed class GrainInvoker
         }
         return false;
     }
+
+    private static bool IsIResultReturn(MethodInfo methodInfo)
+    {
+        if (methodInfo.ReturnType.IsGenericType &&
+            methodInfo.ReturnType.GetGenericTypeDefinition() == typeof(Task<>))
+        {
+            var returnType = methodInfo.ReturnType.GenericTypeArguments[0];
+            return typeof(Microsoft.AspNetCore.Http.IResult).IsAssignableFrom(returnType);
+        }
+        return false;
+    }
+
+    private readonly bool _isIResultType;
 
     public async Task Invoke(IGrain grain, HttpContext context)
     {
@@ -123,6 +137,13 @@ internal sealed class GrainInvoker
 
             if (result is not null)
             {
+                // Handle ASP.NET Core IResult (minimal APIs)
+                if (_isIResultType && result is Microsoft.AspNetCore.Http.IResult aspResult)
+                {
+                    await aspResult.ExecuteAsync(context);
+                }
+                else
+                {
                 string? contentType = null;
 
                 if (context.Request.Headers.TryGetValue("Accept", out var acceptVal))
@@ -162,6 +183,7 @@ internal sealed class GrainInvoker
                     {
                         await context.Response.WriteAsync(result.ToString() ?? string.Empty);
                     }
+                }
                 }
             }
         }

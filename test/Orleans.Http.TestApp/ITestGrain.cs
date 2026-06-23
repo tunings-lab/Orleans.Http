@@ -89,6 +89,12 @@ public interface ITestGrain : IGrainWithGuidKey
 
     [HttpPatch("{grainId}/PatchTest")]
     Task<string> PatchTest();
+
+    [HttpGet("{grainId}/IResultTest")]
+    Task<IGrainHttpResult<TestPayload>> IResultLikeTest();
+
+    [HttpGet("{grainId}/IResultNotFound")]
+    Task<IGrainHttpResult<string>> IResultLikeNotFoundTest();
 }
 
 [ProtoContract]
