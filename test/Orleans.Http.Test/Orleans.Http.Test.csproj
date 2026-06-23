@@ -7,11 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
@@ -23,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Orleans.Http\Orleans.Http.csproj" />
     <ProjectReference Include="..\..\src\Orleans.Http.MediaTypes.Protobuf\Orleans.Http.MediaTypes.Protobuf.csproj" />
+    <ProjectReference Include="..\Orleans.Http.TestApp\Orleans.Http.TestApp.csproj" />
   </ItemGroup>
 
 </Project>

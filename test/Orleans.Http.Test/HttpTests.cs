@@ -12,30 +12,24 @@ using Xunit;
 
 namespace Orleans.Http.Test;
 
-public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
+public class HttpTests : IClassFixture<TestWebAppFactory>
 {
     private readonly TestWebAppFactory _factory;
+    private readonly HttpClient _client;
 
     public HttpTests(TestWebAppFactory factory)
     {
         _factory = factory;
+        _client = factory.CreateClient();
     }
 
-    public async Task InitializeAsync()
-    {
-        await _factory.StartAsync();
-    }
-
-    public async Task DisposeAsync()
-    {
-        await _factory.StopAsync();
-    }
+    // No InitializeAsync/DisposeAsync needed — WebApplicationFactory manages lifecycle
 
     [Fact]
     public async Task RouteTest_MissingGrainId_ReturnsNotFound()
     {
         var url = "/grains";
-        var response = await _factory.Client.GetWithAcceptAsync("application/json", url);
+        var response = await _client.GetWithAcceptAsync("application/json", url);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
@@ -43,7 +37,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
     public async Task RouteTest_MalformedGrainId_ReturnsBadRequest()
     {
         var url = "/grains/test/Orleans.Http.Test.ITestGrain/malformed-grain-id/get";
-        var response = await _factory.Client.GetWithAcceptAsync("application/json", url);
+        var response = await _client.GetWithAcceptAsync("application/json", url);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -51,7 +45,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
     public async Task RouteTest_DefaultPattern_ReturnsOk()
     {
         var url = "/grains/test/Orleans.Http.Test.ITestGrain/00000000-0000-0000-0000-000000000000/get";
-        var response = await _factory.Client.GetWithAcceptAsync("application/json", url);
+        var response = await _client.GetWithAcceptAsync("application/json", url);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
@@ -59,7 +53,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
     public async Task RouteTest_WrongMethod_ReturnsMethodNotAllowed()
     {
         var url = "/grains/test/Orleans.Http.Test.ITestGrain/00000000-0000-0000-0000-000000000000/get";
-        var response = await _factory.Client.PostAsync(url, new StringContent(""));
+        var response = await _client.PostAsync(url, new StringContent(""));
         Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
     }
 
@@ -67,7 +61,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
     public async Task RouteTest_CustomPattern_ReturnsCreatedWithHeader()
     {
         var url = "/grains/test/00000000-0000-0000-0000-000000000000/GetCustom";
-        var response = await _factory.Client.GetWithAcceptAsync("application/json", url);
+        var response = await _client.GetWithAcceptAsync("application/json", url);
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Assert.True(response.Headers.Contains("CustomHeader"));
@@ -84,10 +78,10 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
     {
         var url = "/grains/test/00000000-0000-0000-0000-000000000000/SameUrl";
 
-        var getResponse = await _factory.Client.GetWithAcceptAsync("application/json", url);
+        var getResponse = await _client.GetWithAcceptAsync("application/json", url);
         Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
 
-        var postResponse = await _factory.Client.PostAsync(url, new StringContent(""));
+        var postResponse = await _client.PostAsync(url, new StringContent(""));
         Assert.Equal(HttpStatusCode.OK, postResponse.StatusCode);
     }
 
@@ -96,10 +90,10 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
     {
         var url = "/grains/test/00000000-0000-0000-0000-000000000000/SameUrlAndMethod";
 
-        var getResponse = await _factory.Client.GetWithAcceptAsync("application/json", url);
+        var getResponse = await _client.GetWithAcceptAsync("application/json", url);
         Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
 
-        var postResponse = await _factory.Client.PostAsync(url, new StringContent(""));
+        var postResponse = await _client.PostAsync(url, new StringContent(""));
         Assert.Equal(HttpStatusCode.OK, postResponse.StatusCode);
     }
 
@@ -107,7 +101,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
     public async Task RouteTest_RandomGuidProvider_ReturnsOk()
     {
         var url = "/grains/test/get6";
-        var response = await _factory.Client.GetWithAcceptAsync("application/json", url);
+        var response = await _client.GetWithAcceptAsync("application/json", url);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
@@ -115,7 +109,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
     public async Task RouteTest_FailingProvider_ReturnsInternalServerError()
     {
         var url = "/grains/test/get7";
-        var response = await _factory.Client.GetWithAcceptAsync("application/json", url);
+        var response = await _client.GetWithAcceptAsync("application/json", url);
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
     }
 
@@ -125,7 +119,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
         var payload = new TestPayload { Number = 12340000, Text = "Test text" };
         var url = "/grains/test/00000000-0000-0000-0000-000000000000/JsonTest";
 
-        var response = await _factory.Client.PostAsJsonAsync(url, payload);
+        var response = await _client.PostAsJsonAsync(url, payload);
         Assert.True(response.IsSuccessStatusCode);
 
         var resp = await response.Content.ReadFromJsonAsync<TestPayload>();
@@ -140,7 +134,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
         var url = "/grains/test/00000000-0000-0000-0000-000000000000/FormTest";
         var dic = new Dictionary<string, string> { ["Test"] = "testing dic" };
 
-        var response = await _factory.Client.PostAsync(url, new FormUrlEncodedContent(dic));
+        var response = await _client.PostAsync(url, new FormUrlEncodedContent(dic));
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
@@ -159,7 +153,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
         request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/protobuf");
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/protobuf"));
 
-        var response = await _factory.Client.SendAsync(request);
+        var response = await _client.SendAsync(request);
         var respStream = await response.Content.ReadAsStreamAsync();
         var respPayload = Serializer.Deserialize<TestPayload>(respStream);
 
@@ -171,7 +165,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
     public async Task AuthTest_WithoutToken_ReturnsUnauthorized()
     {
         var url = "/grains/test/Orleans.Http.Test.ITestGrain/00000000-0000-0000-0000-000000000000/GetWithAuth";
-        var response = await _factory.Client.GetWithAcceptAsync("application/json", url);
+        var response = await _client.GetWithAcceptAsync("application/json", url);
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
@@ -180,7 +174,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
     {
         var jwt = GenerateJwt(admin: false);
         var url = "/grains/test/Orleans.Http.Test.ITestGrain/00000000-0000-0000-0000-000000000000/GetWithAuth";
-        var response = await _factory.Client.GetWithAcceptAsync("application/json", url, jwt);
+        var response = await _client.GetWithAcceptAsync("application/json", url, jwt);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var authResp = await response.Content.ReadFromJsonAsync<AuthResponse>();
@@ -194,7 +188,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
     {
         var jwt = GenerateJwt(admin: false);
         var url = "/grains/test/Orleans.Http.Test.ITestGrain/00000000-0000-0000-0000-000000000000/GetWithAuthAdmin";
-        var response = await _factory.Client.GetWithAcceptAsync("application/json", url, jwt);
+        var response = await _client.GetWithAcceptAsync("application/json", url, jwt);
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
@@ -203,7 +197,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
     {
         var jwt = GenerateJwt(admin: true);
         var url = "/grains/test/Orleans.Http.Test.ITestGrain/00000000-0000-0000-0000-000000000000/GetWithAuthAdmin";
-        var response = await _factory.Client.GetWithAcceptAsync("application/json", url, jwt);
+        var response = await _client.GetWithAcceptAsync("application/json", url, jwt);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var authResp = await response.Content.ReadFromJsonAsync<AuthResponse>();
@@ -217,7 +211,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
         var url = "/grains/test/00000000-0000-0000-0000-000000000000/PatchTest";
         var request = new HttpRequestMessage(HttpMethod.Patch, url);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        var response = await _factory.Client.SendAsync(request);
+        var response = await _client.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadAsStringAsync();
@@ -227,7 +221,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>, IAsyncLifetime
     private static string GenerateJwt(bool admin)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(TestWebAppFactory.TestSecret);
+        var key = Encoding.ASCII.GetBytes(TestAppConfig.TestSecret);
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(new[]
