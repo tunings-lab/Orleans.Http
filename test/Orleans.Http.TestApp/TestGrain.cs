@@ -97,6 +97,16 @@ public class TestGrain : Grain, ITestGrain
     }
 
     public Task<string> PatchTest() => Task.FromResult("Patched");
+
+    public Task<IGrainHttpResult<TestPayload>> IResultLikeTest()
+    {
+        return Task.FromResult(GrainResults.Ok(new TestPayload { Number = 42, Text = "GrainResults" }));
+    }
+
+    public Task<IGrainHttpResult<string>> IResultLikeNotFoundTest()
+    {
+        return Task.FromResult(GrainResults.NotFound("Not found via GrainResults"));
+    }
 }
 
 public class RandomGuidRouteGrainProvider : IRouteGrainProvider

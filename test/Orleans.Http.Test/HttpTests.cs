@@ -218,6 +218,28 @@ public class HttpTests : IClassFixture<TestWebAppFactory>
         Assert.Contains("Patched", body);
     }
 
+    [Fact]
+    public async Task IResultTest_ReturnsOkWithJson()
+    {
+        var url = "/grains/test/00000000-0000-0000-0000-000000000000/IResultTest";
+        var response = await _client.GetWithAcceptAsync("application/json", url);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var payload = await response.Content.ReadFromJsonAsync<TestPayload>();
+        Assert.NotNull(payload);
+        Assert.Equal(42, payload!.Number);
+        Assert.Equal("GrainResults", payload.Text);
+    }
+
+    [Fact]
+    public async Task IResultNotFound_Returns404()
+    {
+        var url = "/grains/test/00000000-0000-0000-0000-000000000000/IResultNotFound";
+        var response = await _client.GetWithAcceptAsync("application/json", url);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
     private static string GenerateJwt(bool admin)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
