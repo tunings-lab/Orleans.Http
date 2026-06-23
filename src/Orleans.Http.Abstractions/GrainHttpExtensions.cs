@@ -19,7 +19,7 @@ public interface IGrainHttpResult<TResult> : IGrainHttpResult { }
 
 /// <summary>Default implementation of <see cref="IGrainHttpResult{TResult}"/>.</summary>
 [GenerateSerializer]
-internal sealed class GrainHttpResult<TResult> : IGrainHttpResult<TResult>
+public sealed class GrainHttpResult<TResult> : IGrainHttpResult<TResult>
 {
     [Id(0)]
     public Dictionary<string, string>? ResponseHeaders { get; set; }

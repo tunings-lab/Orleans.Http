@@ -57,7 +57,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
     }
 
-    [Fact(Skip = "IGrainHttpResult serialization across grain call boundary — tracked in #6")]
+    [Fact]
     public async Task RouteTest_CustomPattern_ReturnsCreatedWithHeader()
     {
         var url = "/grains/test/00000000-0000-0000-0000-000000000000/GetCustom";
@@ -113,7 +113,7 @@ public class HttpTests : IClassFixture<TestWebAppFactory>
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
     }
 
-    [Fact(Skip = "JSON body deserialization in grain pipeline — tracked in #8")]
+    [Fact]
     public async Task JsonTest_PostBody_ReturnsSameBody()
     {
         var payload = new TestPayload { Number = 12340000, Text = "Test text" };

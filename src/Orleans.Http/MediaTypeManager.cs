@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.IO.Pipelines;
-using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Net.Http.Headers;
 using Orleans.Http.Abstractions;
 
 namespace Orleans.Http;
@@ -35,11 +35,43 @@ internal sealed class MediaTypeManager
         }
     }
 
+    /// <summary>
+    /// Resolves a media type handler for the given content type string.
+    /// Strips charset and quality parameters before lookup.
+    /// </summary>
+    private bool TryGetHandler(string? mediaType, out IMediaTypeHandler? handler)
+    {
+        handler = null;
+        if (string.IsNullOrEmpty(mediaType)) return false;
+
+        // Direct exact match first (fast path)
+        if (_handlers.TryGetValue(mediaType, out handler))
+            return true;
+
+        // Parse and match on type/subtype only (strips charset etc.)
+        if (MediaTypeHeaderValue.TryParse(mediaType, out var parsed))
+        {
+            var essential = $"{parsed.MediaType}";
+            if (_handlers.TryGetValue(essential, out handler))
+                return true;
+
+            // Also try without any parameters
+            if (parsed.MediaType.HasValue)
+            {
+                var stripped = parsed.MediaType.Value.ToString();
+                if (_handlers.TryGetValue(stripped, out handler))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     public async ValueTask<bool> Serialize(string? mediaType, object? obj, PipeWriter writer)
     {
         if (string.IsNullOrEmpty(mediaType)) return false;
 
-        if (_handlers.TryGetValue(mediaType, out var handler))
+        if (TryGetHandler(mediaType, out var handler) && handler is not null)
         {
             try
             {
@@ -59,7 +91,7 @@ internal sealed class MediaTypeManager
     {
         if (string.IsNullOrEmpty(mediaType)) return default;
 
-        if (_handlers.TryGetValue(mediaType, out var handler))
+        if (TryGetHandler(mediaType, out var handler) && handler is not null)
         {
             try
             {

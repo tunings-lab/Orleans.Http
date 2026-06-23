@@ -17,29 +17,15 @@ internal sealed class JsonMediaTypeHandler : IMediaTypeHandler
 
     public async ValueTask<object?> Deserialize(PipeReader reader, Type type, CancellationToken cancellationToken)
     {
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            var readResult = await reader.ReadAsync(cancellationToken);
-            var buffer = readResult.Buffer;
+        // Read the entire body into a stream, then deserialize
+        using var stream = new MemoryStream();
+        await reader.CopyToAsync(stream, cancellationToken);
+        stream.Position = 0;
 
-            if (buffer.IsEmpty && readResult.IsCompleted)
-                return null;
+        if (stream.Length == 0)
+            return null;
 
-            // Read all bytes from the buffer into a stream
-            using var stream = new MemoryStream();
-            foreach (var segment in buffer)
-            {
-                stream.Write(segment.Span);
-            }
-            stream.Position = 0;
-            var result = await JsonSerializer.DeserializeAsync(stream, type, _options, cancellationToken);
-
-            reader.AdvanceTo(buffer.End);
-
-            if (readResult.IsCompleted) return result;
-        }
-
-        return null;
+        return await JsonSerializer.DeserializeAsync(stream, type, _options, cancellationToken);
     }
 
     public async ValueTask Serialize(object? obj, PipeWriter writer)
