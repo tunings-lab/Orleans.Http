@@ -2,6 +2,7 @@ using ProtoBuf;
 using System.Text.Json.Serialization;
 using Orleans.Concurrency;
 using Orleans.Http.Abstractions;
+using Orleans;
 
 namespace Orleans.Http.Test;
 
@@ -91,23 +92,29 @@ public interface ITestGrain : IGrainWithGuidKey
 }
 
 [ProtoContract]
+[GenerateSerializer]
 public class TestPayload
 {
     [ProtoMember(1)]
     [JsonPropertyName("number")]
+    [Id(0)]
     public int Number { get; set; }
 
     [ProtoMember(2)]
     [JsonPropertyName("text")]
+    [Id(1)]
     public string? Text { get; set; }
 }
 
 [ProtoContract]
+[GenerateSerializer]
 public class AuthResponse
 {
     [ProtoMember(1)]
+    [Id(0)]
     public string? User { get; set; }
 
     [ProtoMember(2)]
+    [Id(1)]
     public string? Role { get; set; }
 }
