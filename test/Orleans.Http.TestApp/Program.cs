@@ -41,6 +41,9 @@ builder.Services
     .AddProtobufMediaType()
     .AddFormsMediaType();
 
+// OpenAPI
+builder.Services.AddOpenApi();
+
 var app = builder.Build();
 
 app.UseRouting();
@@ -48,6 +51,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGrains("grains");
+app.MapOpenApi("/openapi/{documentName}.json");
 
 app.UseRouteGrainProviders(rgppb =>
 {
