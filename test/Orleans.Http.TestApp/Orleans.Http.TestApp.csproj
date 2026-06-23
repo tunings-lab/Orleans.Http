@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <GenerateProgramFile>false</GenerateProgramFile>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +15,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Orleans.Http\Orleans.Http.csproj" />
     <ProjectReference Include="..\..\src\Orleans.Http.MediaTypes.Protobuf\Orleans.Http.MediaTypes.Protobuf.csproj" />
+    <ProjectReference Include="..\..\src\Orleans.Http.CodeGenerator\Orleans.Http.CodeGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

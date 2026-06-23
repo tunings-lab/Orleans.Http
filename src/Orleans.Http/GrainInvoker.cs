@@ -26,6 +26,7 @@ internal sealed class GrainInvoker
     private readonly ILogger _logger;
     private readonly MediaTypeManager _mediaTypeManager;
     private readonly RouteGrainProviderFactory _routeGrainProviderFactory;
+    private readonly IGrainInvokerRegistry? _invokerRegistry;
     private readonly string? _routeGrainProviderPolicy;
     private MethodInfo? _getResult;
     private bool _isIGrainHttpResultType;
@@ -52,8 +53,43 @@ internal sealed class GrainInvoker
         _routeGrainProviderFactory = serviceProvider.GetRequiredService<RouteGrainProviderFactory>();
         _routeGrainProviderPolicy = routeGrainProviderPolicy;
 
-        BuildResultDelegate();
+        // Try to get the compiled invoker registry (optional — falls back to reflection)
+        _invokerRegistry = serviceProvider.GetService<IGrainInvokerRegistry>();
+
+        // Try to use compiled delegates from source generator
+        if (_invokerRegistry is not null && methodInfo.DeclaringType is not null)
+        {
+            _compiledInvoker = _invokerRegistry.TryGetInvoker(methodInfo.DeclaringType, methodInfo.Name, out var inv) ? inv : null;
+
+            if (_invokerRegistry.TryGetResultExtractor(methodInfo.DeclaringType, methodInfo.Name, out var ext))
+            {
+                _compiledGetResult = ext;
+                _isIGrainHttpResultType = IsGrainHttpResultReturn(methodInfo);
+            }
+        }
+
+        // Fall back to reflection-based delegates if no compiled ones
+        if (_compiledInvoker is null)
+        {
+            BuildResultDelegate();
+        }
+
         BuildParameterMap();
+    }
+
+    private Func<IGrain, object?[], Task>? _compiledInvoker;
+    private Func<Task, object?>? _compiledGetResult;
+
+    private static bool IsGrainHttpResultReturn(MethodInfo methodInfo)
+    {
+        if (methodInfo.ReturnType.IsGenericType &&
+            methodInfo.ReturnType.GetGenericTypeDefinition() == typeof(Task<>))
+        {
+            var returnType = methodInfo.ReturnType.GenericTypeArguments[0];
+            return returnType == typeof(IGrainHttpResult) ||
+                   returnType.GetInterfaces().Any(i => i == typeof(IGrainHttpResult));
+        }
+        return false;
     }
 
     public async Task Invoke(IGrain grain, HttpContext context)
@@ -66,12 +102,24 @@ internal sealed class GrainInvoker
         try
         {
             var parameters = await GetParameters(context);
-            var grainCall = (Task)_methodInfo.Invoke(grain, parameters)!;
+            Task grainCall;
+
+            // Use compiled delegate if available, fall back to reflection
+            if (_compiledInvoker is not null)
+            {
+                grainCall = _compiledInvoker(grain, parameters);
+            }
+            else
+            {
+                grainCall = (Task)_methodInfo.Invoke(grain, parameters)!;
+            }
             await grainCall;
 
-        if (_getResult is not null)
+        if (_getResult is not null || _compiledGetResult is not null)
         {
-            var result = _getResult.Invoke(null, [grainCall]);
+            var result = _compiledGetResult is not null
+                ? _compiledGetResult(grainCall)
+                : _getResult!.Invoke(null, [grainCall]);
 
             if (result is not null)
             {
